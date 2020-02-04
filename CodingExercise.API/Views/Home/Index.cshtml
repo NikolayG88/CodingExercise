@@ -1,0 +1,148 @@
+﻿@{
+	ViewBag.Title = "Vehicle Inventory Demo";
+}
+
+
+<label>Login:</label>
+<hr />
+<div class="form-group">
+	<label style="float:left; margin:5px;">Username:</label>
+	<input id="username" class="form-control" type="text" value="Mr. Test" />
+</div>
+<div class="form-group">
+	<label style="float:left; margin:5px;">Password:</label>
+	<input id="password" class="form-control" type="password" value="Test1!" />
+</div>
+<div class="form-group">
+	<button class="btn btn-primary" onclick="authorize()">Authorize</button>
+	<label id="status"></label>
+</div>
+
+<hr />
+<label>API Actions</label>
+
+<label>Controller Action</label>
+<div class="form-group">
+	<select id="actions" class="form-control">
+		<option value="0">Please Select</option>
+		<option value="1">GetAllVehiclesInStock</option>
+		<option value="2">GetVehicleInStockById</option>
+		<option value="3">AddVehicleInStock</option>
+	</select>
+</div>
+
+<div id="getByIdData" style="display:none">
+	<div class="form-group">
+		<label>Please Insert Id: </label>
+		<input id="vehicleId" class="form-control" type="text" />
+		<button id="btnSendReq" class="btn btn-primary">Send Reuquest</button>
+	</div>
+</div>
+
+<div id="addVehicleData">
+	<div class="form-group">
+		<input id="" type="text" class="form-control" />
+	</div>
+</div>
+
+<div id="resultsContainer">
+
+</div>
+
+@section scripts{
+
+	<script>
+
+		function authorize() {
+
+			var username = $('#username').val();
+			var password = $('#password').val();
+			var status = $('label#status');
+
+			var data = { grant_type: "password", username: username, password: password }
+
+			$.ajax({
+				type: 'POST',
+				url: '/Token',
+				data: data
+			}).done(function (data) {
+				console.log(data);
+				status.html('Success');
+				status.css('color', 'green');
+				sessionStorage.setItem('access_token', data.access_token);
+			}).fail(function (err) {
+				console.log(err);
+				status.html('Error');
+				status.css('color', 'red');
+			});
+		}
+
+		jQuery(document).ready(function ($) {
+
+			$('#actions').on('change', function (e) {
+
+				var target = e.currentTarget;
+				var action = target.selectedOptions[0].label;
+
+				$('#getByIdData').hide();
+				$('#resultsContainer').html("");
+
+				switch (target.value) {
+					case '1':
+						AuthorizedGET(action, null, function (data) {
+							$('#resultsContainer').html(JSON.stringify(data));
+						});
+						break;
+					case '2':
+						$('#getByIdData').show();
+						$('#btnSendReq').off().on('click', function () {
+							AuthorizedGET(action, { "id": $('#vehicleId').val() } , function (data) {
+								$('#resultsContainer').html(JSON.stringify(data));
+							});
+						});
+						break;
+					case '3':
+						break;
+				}
+
+			});
+
+		});
+
+
+		function AuthorizedGET(action, params, callback) {
+
+			var token = sessionStorage.getItem('access_token');
+			var headers = {};
+			if (token) {
+				headers.Authorization = 'Bearer ' + token;
+			}
+
+			$.ajax({
+				type: 'GET',
+				url: `/api/VehicleInventory/${action}`,
+				headers: headers,
+				data: params
+			}).done(function (data) {
+				callback(data);
+				//console.log(data);
+			}).fail(function (err) { console.log(err); });
+
+		}
+
+
+		function AuthorizedPOST(action, params, callback) {
+			$.ajax({
+				type: 'POST',
+				url: `/api/VehicleInventory/${action}`,
+				data: params,
+				headers: headers
+			}).done(function (data) {
+				callback(data);
+				console.log(data);
+			}).fail(function (err) { console.log(err); });
+		}
+
+	</script>
+}
+
